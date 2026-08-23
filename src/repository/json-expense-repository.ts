@@ -1,25 +1,29 @@
 import type { ExpenseRepository } from "./expense-repository.js";
-import type { Expense, ExpenseCategory } from "../domain/expense.js";
+import {type Expense, isExpenseCategory } from "../domain/expense.js";
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 
 export class JsonExpenseRepository implements ExpenseRepository{
-  
-  async findAll(): Promise<Expense[]> {
-    const currentFilePath = fileURLToPath(import.meta.url)
+  readonly #filePath: string;
+
+  constructor() {
+    const currFilePath = fileURLToPath(import.meta.url);
+    const currDir = dirname(currFilePath);
     //import.meta.url
     //file:///home/user/project/dist/repository/json-expense-repository.js
    
     //fileURLToPath
     ///home/user/project/dist/repository/json-expense-repository.js
 
-    const currDir = dirname(currentFilePath)
+    //const currDir = dirname(currentFilePath)
     ///home/user/project/dist/repository
-    
-    const filePath = join(currDir, "../../data/expenses.json")
 
-    const content = await readFile(filePath, 'utf-8')
+    this.#filePath = join(currDir, '../../data/expenses.json');
+  }
+  
+  async findAll(): Promise<Expense[]> {
+    const content = await readFile(this.#filePath, 'utf-8')
     const data: unknown = JSON.parse(content) 
 
     //проверка на то, что data - массив
@@ -35,19 +39,39 @@ export class JsonExpenseRepository implements ExpenseRepository{
     return data;
   }
   
-  findById(id: number): Promise<Expense | undefined> {
-    return Promise.resolve(undefined);
+  async findById(id: number): Promise<Expense | undefined> {
+    const expenses = await this.findAll();
+    
+    return expenses.find(expense => expense.id === id);
   }
   
-  create(expense: Expense): Promise<Expense> {
-    return Promise.resolve(expense);  
+  async create(expense: Expense): Promise<Expense> {
+    const data = await this.findAll()
+    data.push(expense)
+
+    const content = JSON.stringify(data, null, 2)
+    //обратно конвертирует массив объектов в json
+    //JSON.stringify(value, replacer, space)
+    // null, 2 - для красивого форматирования
+    await writeFile(this.#filePath, content, 'utf-8')
+    return expense;  
   }
   
-  delete(id: number): Promise<void> {
-    return Promise.resolve();
+  async delete(id: number): Promise<boolean> {
+    const data = await this.findAll();
+    const exist = data.some(expense => expense.id === id);
+
+    if (!exist) return false;
+    const filteredData = data.filter(expense => expense.id !== id)
+
+    const content = JSON.stringify(filteredData, null, 2)
+    await writeFile(this.#filePath, content, 'utf-8')
+    return true;
   }
 }
 
+//оставляем эту функцию здесь по скольку помогает 
+//с распознованием самих данных
 function isExpense(value: unknown): value is Expense {
     return typeof value === 'object' && value !== null &&
       'id' in value && typeof value.id === 'number' &&
@@ -55,13 +79,4 @@ function isExpense(value: unknown): value is Expense {
       'description' in value && typeof value.description === 'string' &&
       'createdAt' in value && typeof value.createdAt === 'string' &&
       'category' in value && isExpenseCategory(value.category) 
-}
-
-function isExpenseCategory(value: unknown): value is ExpenseCategory{
-  return (typeof value === 'string') && value === 'food' ||
-    value === 'transport' ||
-    value === 'entertainment' ||
-    value === 'shopping' ||
-    value === 'health' ||
-    value === 'other'
 }
