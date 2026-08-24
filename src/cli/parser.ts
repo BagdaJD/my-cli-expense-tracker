@@ -8,17 +8,19 @@ import {
   isExpenseCategory,
 } from '../domain/expense.js';
 
+import { ValidationError } from '../errors/validation-error.js';
+
 export function parseId(arr: string[], command: string): number {
   const argument = arr[0];
 
   if (argument === undefined) {
-    throw new Error(`Usage: pnpm dev ${command} <id>`);
+    throw new ValidationError(`Usage: pnpm dev ${command} <id>`);
   }
 
   const id = Number(argument);
 
   if (!Number.isInteger(id) || id <= 0) {
-    throw new Error('Incorrect id');
+    throw new ValidationError('Incorrect id');
   }
 
   return id;
@@ -34,13 +36,13 @@ export function parseArgs(args: string[]): CreateExpenseInput {
         const value = args[++i];
 
         if (value === undefined) {
-          throw new Error('Missing value for --amount');
+          throw new ValidationError('Missing value for --amount');
         }
 
         const amount = Number(value);
 
         if (!Number.isFinite(amount) || amount <= 0) {
-          throw new Error('Amount must be a positive number');
+          throw new ValidationError('Amount must be a positive number');
         }
 
         data.amount = amount;
@@ -51,11 +53,11 @@ export function parseArgs(args: string[]): CreateExpenseInput {
         const value = args[++i];
 
         if (value === undefined) {
-          throw new Error('Missing value for --category');
+          throw new ValidationError('Missing value for --category');
         }
 
         if (!isExpenseCategory(value)) {
-          throw new Error(`Invalid category: ${value}`);
+          throw new ValidationError(`Invalid category: ${value}`);
         }
 
         data.category = value;
@@ -66,11 +68,11 @@ export function parseArgs(args: string[]): CreateExpenseInput {
         const value = args[++i];
 
         if (value === undefined) {
-          throw new Error('Missing value for --description');
+          throw new ValidationError('Missing value for --description');
         }
 
         if (value.trim() === '') {
-          throw new Error('Description cannot be empty');
+          throw new ValidationError('Description cannot be empty');
         }
 
         data.description = value;
@@ -78,20 +80,20 @@ export function parseArgs(args: string[]): CreateExpenseInput {
       }
 
       default:
-        throw new Error(`Unknown argument: ${argument}`);
+        throw new ValidationError(`Unknown argument: ${argument}`);
     }
   }
 
   if (data.amount === undefined) {
-    throw new Error('Missing --amount argument');
+    throw new ValidationError('Missing --amount argument');
   }
 
   if (data.category === undefined) {
-    throw new Error('Missing --category argument');
+    throw new ValidationError('Missing --category argument');
   }
 
   if (data.description === undefined) {
-    throw new Error('Missing --description argument');
+    throw new ValidationError('Missing --description argument');
   }
 
   return {
@@ -112,7 +114,7 @@ export function parseCommands(): ParsedCommand {
   }
 
   if (!isCommand(command)) {
-    throw new Error(`Unknown command: ${command}`);
+    throw new ValidationError(`Unknown command: ${command}`);
   }
 
   return {
