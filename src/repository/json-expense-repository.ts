@@ -3,6 +3,7 @@ import {type Expense, isExpenseCategory } from "../domain/expense.js";
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { readFile, writeFile } from "node:fs/promises";
+import { InvalidDataError } from "../errors/invalid-data-error.js";
 
 export class JsonExpenseRepository implements ExpenseRepository{
   readonly #filePath: string;
@@ -28,12 +29,12 @@ export class JsonExpenseRepository implements ExpenseRepository{
 
     //проверка на то, что data - массив
     if (!Array.isArray(data)) {
-      throw new Error('Invalid expenses data');
+      throw new InvalidDataError('Invalid expenses data');
     }
 
     //проверка на то, что каждый элемент массива - Expense
     if (!data.every(isExpense)) {
-      throw new Error('Invalid expense data');
+      throw new InvalidDataError('Invalid expense data');
     }
     
     return data;

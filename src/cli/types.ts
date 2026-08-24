@@ -1,4 +1,11 @@
-export const commands = ['list', 'get', 'delete', 'add'] as const;
+export const  commands = [
+  'list',
+  'get',
+  'delete',
+  'add',
+  'help',
+  'stats'
+] as const;
 
 export type Command = typeof commands[number];
  
